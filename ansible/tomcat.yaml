@@ -1,0 +1,128 @@
+---
+- name: Install Apache Tomcat
+  hosts: ubuntu_servers
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required dependencies
+      apt:
+        name:
+          - openjdk-17-jdk
+        state: present
+
+    - name: Download Tomcat
+      get_url:
+        # Change URL to the full binary distribution
+        url: https://dlcdn.apache.org/tomcat/tomcat-11/v11.0.13/bin/apache-tomcat-11.0.13.tar.gz
+        dest: /tmp/apache-tomcat-11.0.13.tar.gz
+
+    - name: Extract Tomcat archive
+      unarchive:
+        src: /tmp/apache-tomcat-11.0.13.tar.gz 
+        dest: /opt/
+        remote_src: yes
+
+    - name: Rename Tomcat directory
+      command:
+        cmd: mv /opt/apache-tomcat-11.0.13 /opt/tomcat
+
+    - name: Create Tomcat group
+      group:
+        name: tomcat
+        state: present
+
+    - name: Create Tomcat user
+      user:
+        name: tomcat
+        group: tomcat
+        home: /opt/tomcat
+        create_home: no
+        shell: /bin/false
+
+    - name: Change ownership of Tomcat directory
+      ansible.builtin.file:
+        path: /opt/tomcat
+        owner: tomcat
+        group: tomcat
+        recurse: yes
+
+    - name: Create required Tomcat temp directory 
+      file:
+        path: /opt/tomcat/temp
+        state: directory
+        owner: tomcat
+        group: tomcat
+        mode: '0755'
+
+    - name: Set permissions for Tomcat bin directory
+      file:
+        path: /opt/tomcat/bin
+        owner: tomcat
+        group: tomcat
+        mode: '0755'
+        recurse: yes
+
+    # --- NEW TASK: Explicitly set execute permission on scripts ---
+    - name: Ensure startup scripts are executable
+      file:
+        path: "{{ item }}"
+        owner: tomcat
+        group: tomcat
+        mode: '0755'
+      loop:
+        - /opt/tomcat/bin/startup.sh
+        - /opt/tomcat/bin/shutdown.sh
+        - /opt/tomcat/bin/catalina.sh
+    # -----------------------------------------------------------------
+
+    # --- FIX: YAML Indentation for 'copy' module corrected ---
+    - name: Create Tomcat service file 
+      copy:
+        dest: /etc/systemd/system/tomcat.service
+        content: |
+          [Unit]
+          Description=Apache Tomcat Web Application Container
+          After=network.target
+          
+          [Service]
+          Type=forking
+          # FIX: Hardcoded reliable JAVA_HOME path
+          Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
+          Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+          Environment=CATALINA_HOME=/opt/tomcat
+          Environment=CATALINA_BASE=/opt/tomcat
+          ExecStart=/opt/tomcat/bin/startup.sh
+          ExecStop=/opt/tomcat/bin/shutdown.sh
+          User=tomcat
+          Group=tomcat
+          UMask=0007
+          RestartSec=10
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+    # ----------------------------------------------------------
+
+    - name: Set ownership/permissions for the service file
+      ansible.builtin.file:
+        path: /etc/systemd/system/tomcat.service
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reload systemd to recognize Tomcat service
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable Tomcat to start on boot
+      systemd:
+        name: tomcat
+        enabled: yes
+
+    - name: Start Tomcat service
+      systemd:
+        name: tomcat
+        state: started
