@@ -15,7 +15,6 @@
 
     - name: Download Tomcat
       get_url:
-        # Change URL to the full binary distribution
         url: https://dlcdn.apache.org/tomcat/tomcat-11/v11.0.13/bin/apache-tomcat-11.0.13.tar.gz
         dest: /tmp/apache-tomcat-11.0.13.tar.gz
 
@@ -64,8 +63,7 @@
         group: tomcat
         mode: '0755'
         recurse: yes
-
-    # --- NEW TASK: Explicitly set execute permission on scripts ---
+    
     - name: Ensure startup scripts are executable
       file:
         path: "{{ item }}"
@@ -76,9 +74,7 @@
         - /opt/tomcat/bin/startup.sh
         - /opt/tomcat/bin/shutdown.sh
         - /opt/tomcat/bin/catalina.sh
-    # -----------------------------------------------------------------
-
-    # --- FIX: YAML Indentation for 'copy' module corrected ---
+    
     - name: Create Tomcat service file 
       copy:
         dest: /etc/systemd/system/tomcat.service
@@ -104,7 +100,6 @@
 
           [Install]
           WantedBy=multi-user.target
-    # ----------------------------------------------------------
 
     - name: Set ownership/permissions for the service file
       ansible.builtin.file:
