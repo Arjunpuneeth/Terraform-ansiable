@@ -85,7 +85,7 @@
           
           [Service]
           Type=forking
-          # FIX: Hardcoded reliable JAVA_HOME path
+          #  Hardcoded reliable JAVA_HOME path
           Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64"
           Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
           Environment=CATALINA_HOME=/opt/tomcat
