@@ -48,14 +48,6 @@ resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
   description       = "Allow SSH from Jenkins/Ansible"
 }
 
-#resource "aws_vpc_security_group_ingress_rule" "allow_app_port" {
-  #security_group_id = aws_security_group.allow_tls.id
-  #cidr_ipv4         = "0.0.0.0/0"
-  #from_port         = 8074
-  #p_protocol       = "tcp"
-  #to_port           = 8073
- # description       = "Allow inbound traffic to application port 8073"
-#}
 
 resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
   security_group_id = aws_security_group.allow_tls.id
